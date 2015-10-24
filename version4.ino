@@ -1,6 +1,6 @@
 #include <StopWatch.h>
 
- long lastElapsed;
+long lastElapsed;
 
 // StopWatch rStopwatch, lStopwatch, dsw;
 boolean isRunning = false;
@@ -16,6 +16,19 @@ int bedValve[4] = {0, 9, 10, 11}; //bed valve pins
 int mainValve[3] = {0, 7, 8}; //main valve pins
 int mainLed[3] = {0, 5, 6}; //main led pins
 int bedLed[4] = {0, 14, 15, 16}; //bed led pins
+int selectedBedState[4];
+int bedMatrix[8][4] = {
+  {0, 0, 0, 0},
+  {0, 0, 0, 1},
+  {0, 0, 1, 0},
+  {0, 0, 1, 1},
+  {0, 1, 0, 0},
+  {0, 1, 0, 1},
+  {0, 1, 1, 0},
+  {0, 1, 1, 1}
+};
+unsigned long prevMillis = 0;
+const long interval = 0;
 
 
 int lastPressed = 0; //holds value of last pressed button
@@ -70,12 +83,12 @@ void setup() {
 }
 void loop() {
   scanInput(); //update states implicitly called
+  ledOutputs();
 
-
-//  Serial.print("Main: "); Serial.println(selectedMain);
-//  Serial.print("Bed: "); Serial.println(selectedBed);
-//  Serial.print("State: "); Serial.println(isRunning);
-//  delay(300);
+  //  Serial.print("Main: "); Serial.println(selectedMain);
+  //  Serial.print("Bed: "); Serial.println(selectedBed);
+  //  Serial.print("State: "); Serial.println(isRunning);
+  //  delay(300);
 
 }
 
@@ -127,20 +140,32 @@ void updateMain() {
 void updateBed() {
   Serial.println("toggling bed");
 
-  bSelector ++;
-  dirty = 1; //ndicates bed change when system is isRunning
-  if (bSelector > 3) {
-    bSelector = 0;
+  bSelector--;
+  dirty = 1; //indicates bed change when system is isRunning
+  if (bSelector <0 ) {
+    bSelector = 7;
     dirty = 3;
   }
-  selectedBed = bedValve[bSelector];
+  
+  for(int x = 0; x <4; x++){
+    selectedBedState[x] = bedMatrix[bSelector][x];
+  }
+  //selectedBed = bedValve[bSelector];
   //  Serial.print("Main: "); Serial.println(selectedMain);
-  //  Serial.print("Bed changed: "); Serial.println(selectedBed);
+  int out = (selectedBedState[1]*100)+(selectedBedState[2]*10)+selectedBedState[3];
+    Serial.print("Bed changed: "); Serial.println(out);
 }
+
+/*void newUpdatebBed(){
+  for (int x = 0; x <4; x++){
+    if selected}
+  
+}*/
+
 
 
 void startStop() {
- // Serial.println("start stop");
+  // Serial.println("start stop");
 
   static unsigned long last_interrupt_time = 0;
   unsigned long interrupt_time = millis();
@@ -152,9 +177,20 @@ void startStop() {
 
   }
   last_interrupt_time = interrupt_time;
- 
+
   ;
 }
+
+void ledOutputs() {
+  unsigned long currentMillis = millis();
+
+  if (currentMillis - prevMillis >= interval) {
+    prevMillis = currentMillis;
+    digitalWrite(mainLed[mSelector], !digitalRead(mainLed[mSelector]));
+    digitalWrite(bedLed[bSelector], !digitalRead(bedLed[bSelector]));
+  }
+}
+
 
 boolean debounce(int _pin) {
   // Serial.println("debouncing");
