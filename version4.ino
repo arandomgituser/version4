@@ -14,10 +14,18 @@ int btn3 = 4;
 int btnArray[3] = {0, 3, 4}; //button pins
 int bedValve[4] = {0, 9, 10, 11}; //bed valve pins
 int mainValve[3] = {0, 7, 8}; //main valve pins
-int mainLed[3] = {0, 5, 6}; //main led pins
+int mainLed[3] = {0, 17, 18}; //main led pins
 int bedLed[4] = {0, 14, 15, 16}; //bed led pins
-int selectedBedState[4];
+int selectedMainState[3]; //holds states for main valves
+int selectedBedState[4]; //holds states for bed valves
+int ledState = LOW;
+int mainMatrix[3][3] {
+  {0, 0, 0},
+  {0, 1, 0},
+  {0, 0, 1}
+};
 int bedMatrix[8][4] = {
+
   {0, 0, 0, 0},
   {0, 0, 0, 1},
   {0, 0, 1, 0},
@@ -75,7 +83,7 @@ void setup() {
   pin16 = bedLed3
   */
 
-  for (int x = 7; x < 17; x++) {
+  for (int x = 5; x < 19; x++) {
     pinMode(x, OUTPUT);
     //   digitalWrite(x, LOW);
     Serial.print("Output initialized: Pin "); Serial.println(x);
@@ -126,15 +134,22 @@ void updateMain() {
   Serial.println("toggleMain called");
 
   mSelector ++;
-  bSelector = 1;
+  Serial.print("mselector: "); Serial.println(mSelector);
+
+  bSelector = 7; //start at "all beds on"
   if (mSelector > 2) {
     mSelector = 0;
     bSelector = 0;
   }
+  for (int x = 0; x < 3; x++) {
+    selectedMainState[x] = mainMatrix[mSelector][x];
+  }
   selectedMain = mainValve[mSelector];
   selectedBed = bedValve[bSelector];
-  //  Serial.print("Main changed: "); Serial.println(selectedMain);
-  //  Serial.print("Bed: "); Serial.println(selectedBed);
+  int out = (selectedMainState[1] * 10) + (selectedMainState[2] * 1);
+  Serial.print("array"); Serial.println(out);
+  Serial.print("Main changed: "); Serial.println(selectedMain);
+  Serial.print("Bed: "); Serial.println(selectedBed);
 }
 
 void updateBed() {
@@ -142,24 +157,24 @@ void updateBed() {
 
   bSelector--;
   dirty = 1; //indicates bed change when system is isRunning
-  if (bSelector <0 ) {
+  if (bSelector < 0 ) { //loop through bed states
     bSelector = 7;
     dirty = 3;
   }
-  
-  for(int x = 0; x <4; x++){
+
+  for (int x = 0; x < 4; x++) {
     selectedBedState[x] = bedMatrix[bSelector][x];
   }
   //selectedBed = bedValve[bSelector];
   //  Serial.print("Main: "); Serial.println(selectedMain);
-  int out = (selectedBedState[1]*100)+(selectedBedState[2]*10)+selectedBedState[3];
-    Serial.print("Bed changed: "); Serial.println(out);
+  int out = (selectedBedState[1] * 100) + (selectedBedState[2] * 10) + selectedBedState[3];
+  Serial.print("Bed changed: "); Serial.println(out);
 }
 
 /*void newUpdatebBed(){
   for (int x = 0; x <4; x++){
     if selected}
-  
+
 }*/
 
 
@@ -182,15 +197,40 @@ void startStop() {
 }
 
 void ledOutputs() {
-  unsigned long currentMillis = millis();
+  for (int x = 1; x < 3; x++)
+  {
+    digitalWrite(mainLed[x], selectedMainState[x]);
+  }
+
+  for (int x = 1; x < 4; x++) {
+    digitalWrite(bedLed[x], selectedBedState[x]);
+  }
+  /*unsigned long currentMillis = millis();
 
   if (currentMillis - prevMillis >= interval) {
     prevMillis = currentMillis;
-    digitalWrite(mainLed[mSelector], !digitalRead(mainLed[mSelector]));
-    digitalWrite(bedLed[bSelector], !digitalRead(bedLed[bSelector]));
-  }
-}
+    digitalWrite(mainLed[2], !digitalRead(mainLed[mSelector]));
 
+    if (ledState == LOW) {
+
+      for (int x = 1; x < 3; x++) {
+        digitalWrite(mainLed[x], selectedMainState[x]);
+      }
+      for (int x = 1; x < 4; x++) {
+        digitalWrite(bedLed[x], selectedBedState[x]);
+      }
+      ledState = HIGH;
+    }
+    else if (ledState == HIGH) {
+      for (int x = 1; x < 3; x++) {
+        digitalWrite(mainLed[x], 0);
+      }
+      for (int x = 1; x < 4; x++) {
+        digitalWrite(bedLed[x], 0);
+      }
+    }
+  }*/
+}
 
 boolean debounce(int _pin) {
   // Serial.println("debouncing");
